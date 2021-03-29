@@ -1,5 +1,17 @@
 # Solution design - dictionary approach
 
+## How to run
+In order to run an approach, rename one of the `code_challenge_{approach}.py` file and run main.py.
+
+## Dependencies  
+redis-server installed with   
+Linux: `sudo apt-get install redis-server` 
+MacOS: `brew install redis` 
+PIP:   
+redis==3.5.3 
+pandas==1.1.4   
+ 
+
 ## Strategy - dictionary approach
 
 I cache the processed data into a dictionary (_cache_). 
@@ -12,8 +24,7 @@ The _cache_ contains:
 - _channel_ which nests the lists with _average_ values
 - _majorities_ which contains tuples of channels and majorities
 in the order they arrive
-- _majority_power_ which is the number of 'votes' of current 'majority'
-- _majority_ which will store the current majority after the method _update_majority_winner_ is executed.
+
 
 The methods state() and reverse_state() call _update_majority_winner_ which traverses the cached data in order to generate the 'majority'.
 
@@ -27,6 +38,30 @@ Two additional methods get_averages() and get_switch()
 are used to generate the values from the dataframe.
 
 The methods state() and reverse_state() call _update_majority_winner_ which traverses the cached data in order to generate the 'majority'.
+
+
+## Strategy - Redis approach
+
+I save the data with Redis.   
+The structure is as follows:  
+`KEYS *`
+
+1) "channel3"  
+2) "channel1"  
+3) "channel2"  
+4) "channel4"   
+5) "first_switch"  
+6) "majorities"  
+7) "switch"  
+
+The `switch` and `first_switch` saves the first and last values of the switch field.
+In the `channel` lists the average values are stored in the order the packets are processed.
+The `majorities` field stores the majority categories in order.
+
+A list with all the channel names are saved in memory. An additional list could be saved in Redis, but I chose to save it in the merger class' memory as an optimization measure to avoid additional querries (0.01s gain in total)
+
+The methods state() and reverse_state() call _update_majority_winner_ which traverses the cached data in order to generate the 'majority' value.
+
 
 
 

@@ -4,13 +4,13 @@
 In order to run an approach, rename one of the `code_challenge_{approach}.py` file and run main.py.
 
 ## Dependencies  
-redis-server installed with   
-Linux: `sudo apt-get install redis-server` 
-MacOS: `brew install redis` 
-PIP:   
-redis==3.5.3 
-pandas==1.1.4   
- 
+redis-server installed with    
+Linux: `sudo apt-get install redis-server`    
+MacOS: `brew install redis`    
+PIP:       
+redis==3.5.3   
+pandas==1.1.4      
+   
 
 ## Strategy - dictionary approach
 
@@ -29,7 +29,7 @@ in the order they arrive
 The methods state() and reverse_state() call _update_majority_winner_ which traverses the cached data in order to generate the 'majority'.
 
 
-## Strategy - Pandas
+## Strategy - Pandas approach
 
 I cache the raw data into a pandas dataframe. 
 The same strucuture is preserved. 
@@ -76,7 +76,7 @@ Other validation operations are applied depending on the field.
 
 
 ### _clean_switch()_
-	Applies a conversion in the following manner:  
+Applies a conversion in the following manner:  
 - strings 'false' and 'False' to boolean False
 - strings 'true' and 'True' to boolean True
 - None to None
@@ -85,14 +85,14 @@ Other validation operations are applied depending on the field.
 - anything else to True
 
 ### _clean_average()_
-	 the 'average' field is cleaned with _process_average()_:
-	If the value can't be converted to a number, then None is returned, so that the merger process can know that it has to skip this value.
+ the 'average' field is cleaned with _process_average()_:
+If the value can't be converted to a number, then None is returned, so that the merger process can know that it has to skip this value.
 
 ### _clean_majority()_
-	It makes sure majority is non-empty. It returns None or a string value.
+It makes sure majority is non-empty. It returns None or a string value.
 
 ### _clean_channel()_
-	Converts empty string values to None so that the merger can know it should skip the whole data packet because it can't map the other values to a channel source.
+Converts empty string values to None so that the merger can know it should skip the whole data packet because it can't map the other values to a channel source.
 
 
 

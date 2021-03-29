@@ -1,6 +1,6 @@
-# Solution design
+# Solution design - dictionary approach
 
-## Strategy
+## Strategy - dictionary approach
 
 I cache the processed data into a dictionary (_cache_). 
 
@@ -16,6 +16,18 @@ in the order they arrive
 - _majority_ which will store the current majority after the method _update_majority_winner_ is executed.
 
 The methods state() and reverse_state() call _update_majority_winner_ which traverses the cached data in order to generate the 'majority'.
+
+
+## Strategy - Pandas
+
+I cache the raw data into a pandas dataframe. 
+The same strucuture is preserved. 
+
+Two additional methods get_averages() and get_switch()
+are used to generate the values from the dataframe.
+
+The methods state() and reverse_state() call _update_majority_winner_ which traverses the cached data in order to generate the 'majority'.
+
 
 
 ## Fields validation

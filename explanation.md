@@ -16,17 +16,25 @@ pandas==1.1.4
 
 I cache the processed data into a dictionary (_cache_). 
 
-For a large data set or concurent access needs, this in-memory dictionary can be replaced with a non-relational DB.
+For a large data set or concurent access needs, this in-memory dictionary can be replaced with a non-relational DB or a message broker can be added for distributed access (like Redis or ZeroMQ).
 
 
-The _cache_ contains:   
-- the first and last switch values retrieved.
-- _channel_ which nests the lists with _average_ values
-- _majorities_ which contains tuples of channels and majorities
-in the order they arrive
+This is an improved version of the dictionary approach.    
+Instead of saving in RAM memory the lists with averages, only first and last values are saved.     
+Also, instead of creating an in-memory list with *all* 'majority' values from all packets, I added an algorithm that computes the 'majority' field for both forward and backward processing on the spot, avoiding huge memory consumption this way.
 
+No mather how many data packets the merger receives, the memory consumption stays the same.
+This is an example of state of the cached data:
 
-The methods state() and reverse_state() call _update_majority_winner_ which traverses the cached data in order to generate the 'majority'.
+```
+{'channels': {'2': [85.0, 59.0], '1': [56.0, 24.0], '3': [86.0, 58.0]}, 'majorities': {'2': 'foo', '1': 'foo', '3': '1000'}, 'forward_maj_winner': ('foo', 2), 'backwards_maj_winner': ('bar', 2), 'last_switch': True, 'first_switch': True}
+```
+
+`cache['channels']` contains the 'average' values, the first and last one.
+`cache['last_switch']` and `cache['first_switch']` contains the first and last switch values.
+`cache["forward_maj_winner"]` and `cache["backwards_maj_winner"]` contain the 'majority' value for the merged data, which is computed on the spot at each processing.
+`cache["majorities"]` contains a dictionary with the state of current majorities for each channel.
+
 
 
 ## Strategy - Pandas approach

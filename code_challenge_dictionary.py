@@ -12,13 +12,17 @@ class CodeChallengeImplementation:
     def __init__(self):
 
         # data member used to save data from past processed messages
-        self.cache = {}
+        self.cache = {} 
+
+        self.initiated = False # to mark the processing of first data packet
 
         # initiate main pairs
-        self.cache['majority'] = ""
-        self.cache['majority_power'] = 0
-        self.cache['channels'] = {}
-        self.cache['majorities'] = [] 
+        self.cache['channels'] = {} # store values for average
+
+        self.cache["majorities"] = {} # store current majority for each channel
+        self.cache["forward_maj_winner"] = () # for state value
+        self.cache["backwards_maj_winner"] = () # for reversed state value
+
 
         # that's for my fun:  :)
         CodeChallengeImplementation._processed_bulks+=1
@@ -130,25 +134,50 @@ class CodeChallengeImplementation:
         
         # Packets with empty 'channel' are skipped altogether, because they can't be mapped anywhere:
         if channel!='':
-            # save first switch value received in a bulk cycle
-            if 'switch' not in self.cache:
-                self.cache['first_switch'] = switch
 
             if switch != None: # save switch only if it's a valid value
-                self.cache['switch'] = switch
+                self.cache['last_switch'] = switch
 
+            # initiate the channel node if it does not exist:  
             if channel not in self.cache['channels']:
-                self.cache['channels'][channel] = {}
-                self.cache['channels'][channel]['qties'] = []
+                self.cache['channels'][channel] = []
 
-            # store 'average' values and pack them by channel number:
+            # store 'average' values and pack them by channel number. Save only last and first.
             if average!=None:
-                self.cache['channels'][channel]['qties'].append(average)
+                saved_averages = len(self.cache['channels'][channel])
+                if saved_averages==0 or saved_averages==1:
+                    # if this is the first or second packet, then just add the average to the list
+                    self.cache['channels'][channel].append(average)
+                else:
+                    # if this is a data packet after the first two, override the last 'average' field to constant memory consumption:
+                    self.cache['channels'][channel][1] = average
 
-            # store categories in the order they come, also, save the channel:
-            # skip empty values
-            if majority!=None:
-                self.cache['majorities'].append((channel,majority))
+            # save current majority for the channel in the data packet:
+            self.cache["majorities"][channel] = majority
+            
+            # take all current majorities and find the most frequent one and its frequency:
+            current_majorities = [val for key, val in self.cache["majorities"].items()]
+            most_frequent_maj = self.most_frequent(current_majorities)
+            count_most_frequent_maj = current_majorities.count(most_frequent_maj)
+            current_maj = (most_frequent_maj, count_most_frequent_maj)
+
+            #  if this is the first data packet that is processed, initiate the fields in the cache structure:
+            if self.initiated==False:
+                self.cache['first_switch'] = switch
+                self.cache["forward_maj_winner"] = current_maj
+                self.cache["backwards_maj_winner"] = current_maj
+                self.initiated=True
+            else:
+                # this is the frequency of the previous majority winner:
+                old_votes = current_majorities.count(self.cache["forward_maj_winner"][1])
+
+                # update 'majority' value for backward and forward processing:
+                if self.cache["forward_maj_winner"][1]<count_most_frequent_maj or old_votes<count_most_frequent_maj:
+                    self.cache["forward_maj_winner"] = current_maj
+
+                if self.cache["backwards_maj_winner"][1]<count_most_frequent_maj:
+                    self.cache["backwards_maj_winner"] = current_maj
+
 
 
 
@@ -167,47 +196,6 @@ class CodeChallengeImplementation:
       
         return current_most_freq
 
-    
-    def update_majority_winner(self, reverse) -> str:
-        """
-        Method which traverses the cached messages and returns the current 'majority'
-            for the merged data
-        """
-        current_majority = ""
-        current_power=0
-        occurences = {} 
-
-        # if the 'reverse' parameter is True, then reverse the working list before processing it:
-        if reverse:
-            working_list = self.cache['majorities'][::-1] #could also have used .copy().reverse()
-        else:
-            working_list = self.cache['majorities']
-
-        '''Process the messages one by one.'''
-        for maj in working_list:
-            # maj[1] stores the category
-            # maj[0] stores the channel
-            occurences[maj[0]]=maj[1]
-            """
-            Process the messages one by one. At each cycle, 
-            generate a dictionary that contains the last seen category from each channel
-            Store this in 'occurences'
-            """
-
-            # fetch the current majority for each channel
-            current_majorities = [val[1] for val in occurences.items()]
-
-            possible_winner = self.most_frequent(current_majorities)
-            new_power = current_majorities.count(possible_winner)
-            old_power = current_majorities.count(current_majority)
-            
-            #if the new number of majority 'votes' is bigger than the previous one,
-            #   consider this new category as current winner:
-            if new_power>old_power:
-                current_majority=possible_winner
-                current_power=new_power
-
-        return current_majority
 
 
     def state(self) -> dict:
@@ -215,11 +203,10 @@ class CodeChallengeImplementation:
         Return the current merged state
         """
         res = {}
-        res['switch'] = self.cache['switch']
-        averages = [float(val['qties'][-1]) for key,val in self.cache['channels'].items()]
+        res['switch'] = self.cache['last_switch']
+        averages = [float(val[-1]) for key,val in self.cache['channels'].items()]
         res['average'] = sum(averages)/len(averages)
-
-        res['majority']= self.update_majority_winner(reverse=False)
+        res['majority']= str(self.cache["forward_maj_winner"][0])
 
         return res
 
@@ -229,9 +216,10 @@ class CodeChallengeImplementation:
 
         res = {}
         res['switch'] = self.cache['first_switch']
-        averages = [float(val['qties'][0]) for key,val in self.cache['channels'].items()]
+        averages = [float(val[0]) for key,val in self.cache['channels'].items()]
         res['average'] = sum(averages)/len(averages)
 
-        res['majority']= self.update_majority_winner(reverse=True)
-
+        res['majority']= str(self.cache["backwards_maj_winner"][0])
+        # print(self.cache)
+        # print()
         return res
